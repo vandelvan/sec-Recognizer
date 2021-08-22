@@ -7,7 +7,9 @@ import glob
 faces_encodings = []
 nombres = []
 cur_direc = os.getcwd()
-path = os.path.join(cur_direc, '/home/vandelvan/Documents/escuela/seguridad/Actividad 1.2/caras/')
+path = os.path.join(cur_direc, 'caras/')
+print(cur_direc)
+print(path)
 archivos = [f for f in glob.glob(path+'*.jpg')]
 number_files = len(archivos)
 names = archivos.copy()

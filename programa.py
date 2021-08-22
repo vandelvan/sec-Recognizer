@@ -85,8 +85,45 @@ def tomarFoto(nombre):
             cv2.imwrite(os.path.join(path, nombre+".jpg"), cleanframe)
             break
 
+def validarFoto(nombre):
+    face_locations = []
+    process_this_frame = True
+    video_capture = cv2.VideoCapture(0)
+    while True:
+        ret, frame = video_capture.read()
+        cleanframe = frame.copy()
+        small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+        rgb_small_frame = small_frame[:, :, ::-1]
+        if process_this_frame:
+            face_locations = face_recognition.face_locations( rgb_small_frame)
+        process_this_frame = not process_this_frame
+    # Display the results
+        for (top, right, bottom, left) in face_locations:
+            top *= 4
+            right *= 4
+            bottom *= 4
+            left *= 4
+    # Draw a rectangle around the face
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+    # Display the resulting image
+        cv2.imshow('Video', frame)
+    # Hit 'q' on the keyboard to quit!
+        if (cv2.waitKey(1) & 0xFF == ord(' ')) and (len(face_locations)>0) and (len(face_locations)<2):
+            cv2.destroyAllWindows()
+            user_image = face_recognition.load_image_file(os.path.join(path, nombre+".jpg"))
+            user_face_encoding = face_recognition.face_encodings(user_image)[0]
+
+            face_encodings = face_recognition.face_encodings( rgb_small_frame, face_locations)
+            matches = face_recognition.compare_faces ([user_face_encoding], face_encodings[0])
+            if(matches[0]):
+                return True
+            else:
+                return False
+
 
 opc = "E"
+
+print(validarFoto("ivan"))
 
 db = conectar()
 

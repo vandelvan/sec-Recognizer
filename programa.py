@@ -5,9 +5,19 @@ import face_recognition
 import cv2
 import numpy as np
 import os
+import warnings
+warnings.filterwarnings("ignore")
 
 cur_direc = os.getcwd()
 path = os.path.join(cur_direc, 'caras', "")
+
+def screen_clear():
+   # for mac and linux(here, os.name is 'posix')
+   if os.name == 'posix':
+      _ = os.system('clear')
+   else:
+      # for windows platfrom
+      _ = os.system('cls')
 
 def esUsuario(usuario):
     if re.match("^[a-zA-Z0-9_-]+$", usuario):
@@ -41,10 +51,24 @@ def existeUsuario(con, nombre):
 
     rows = cursorObj.fetchall()
 
+    cursorObj.close()
+
     if(len (rows)>0):
         return True
     else:
         return False
+
+def obtenerUsuario(con, nombre):
+
+    cursorObj = con.cursor()
+
+    cursorObj.execute('SELECT id, nombre, info FROM usuarios WHERE nombre = ?', [nombre])
+
+    rows = cursorObj.fetchall()
+
+    cursorObj.close()
+
+    return rows[0]
 
 
 
@@ -54,6 +78,8 @@ def nuevoUsario(con, nombre, info):
     datos = (nombre, info)
 
     cursorObj.execute('INSERT INTO usuarios(nombre, info) VALUES(?, ?)', datos)
+
+    cursorObj.close()
 
     con.commit()
 
@@ -88,6 +114,10 @@ def tomarFoto(nombre):
 def validarFoto(nombre):
     face_locations = []
     process_this_frame = True
+
+    user_image = face_recognition.load_image_file(os.path.join(path, nombre+".jpg"))
+    user_face_encoding = face_recognition.face_encodings(user_image)[0]
+
     video_capture = cv2.VideoCapture(0)
     while True:
         ret, frame = video_capture.read()
@@ -96,6 +126,11 @@ def validarFoto(nombre):
         rgb_small_frame = small_frame[:, :, ::-1]
         if process_this_frame:
             face_locations = face_recognition.face_locations( rgb_small_frame)
+            if (len(face_locations)>0) and (len(face_locations)<2):
+                face_encodings = face_recognition.face_encodings( rgb_small_frame, face_locations)
+                matches = face_recognition.compare_faces ([user_face_encoding], face_encodings[0])
+                if(matches[0]):
+                    return True
         process_this_frame = not process_this_frame
     # Display the results
         for (top, right, bottom, left) in face_locations:
@@ -108,24 +143,18 @@ def validarFoto(nombre):
     # Display the resulting image
         cv2.imshow('Video', frame)
     # Hit 'q' on the keyboard to quit!
-        if (cv2.waitKey(1) & 0xFF == ord(' ')) and (len(face_locations)>0) and (len(face_locations)<2):
+        if (cv2.waitKey(1) & 0xFF == ord('q')):
             cv2.destroyAllWindows()
-            user_image = face_recognition.load_image_file(os.path.join(path, nombre+".jpg"))
-            user_face_encoding = face_recognition.face_encodings(user_image)[0]
-
-            face_encodings = face_recognition.face_encodings( rgb_small_frame, face_locations)
-            matches = face_recognition.compare_faces ([user_face_encoding], face_encodings[0])
-            if(matches[0]):
-                return True
-            else:
-                return False
+            return False
 
 
 opc = "E"
 
-print(validarFoto("ivan"))
+# print(validarFoto("ivan"))
 
 db = conectar()
+
+screen_clear()
 
 while(opc!="Y" and opc!="N"):
     opc=input("Crear nueva cuenta? (Y: Si/N: No)\n")
@@ -141,8 +170,27 @@ if(opc=="Y"):
             user = input("Nombre de usuario ya en uso, escribe uno nuevo\n")
     info = input("Escribe tu informacion privada\n")
     nuevoUsario(db, user, info)
+    screen_clear()
+    print("Tomando rostro. Cuando su rostro este marcado con un cuadro, presione \"espacio\"")
     tomarFoto(user)
 
+screen_clear()
+print("Inicio de Sesion")
+user = input("Digita tu nombre de usuario\n")
+while(not esUsuario(user)):
+    user = input("Usuario invalido(Solo letras, numeros, y guiones)\n")
+
+if(existeUsuario(db, user)):
+    screen_clear()
+    print("Confirmando rostro. Presione \"q\" para cancelar")
+    if validarFoto(user):
+        datos = obtenerUsuario(db, user)
+        screen_clear()
+        print("ID: " + str(datos[0]) + "\nNombre: " + datos[1] + "\nInformacion privada: " + datos[2])
+    else:
+        print("Rostro sin confirmar. Saliendo.")
+else:
+    print("Este usuario no existe")
 
         
     

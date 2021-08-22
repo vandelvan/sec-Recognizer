@@ -7,9 +7,7 @@ import glob
 faces_encodings = []
 nombres = []
 cur_direc = os.getcwd()
-path = os.path.join(cur_direc, 'caras/')
-print(cur_direc)
-print(path)
+path = os.path.join(cur_direc, 'caras', "")
 archivos = [f for f in glob.glob(path+'*.jpg')]
 number_files = len(archivos)
 names = archivos.copy()
@@ -19,7 +17,7 @@ for i in range(number_files):
     globals()['image_encoding_{}'.format(i)] = face_recognition.face_encodings(globals()['image_{}'.format(i)])[0]
     faces_encodings.append(globals()['image_encoding_{}'.format(i)])
 # Create array of known names
-    names[i] = names[i].replace(cur_direc, "")  
+    names[i] = names[i].replace(path, "")  
     nombres.append(names[i])
 
 face_locations = []
